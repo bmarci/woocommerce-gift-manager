@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 add_action('woocommerce_pre_payment_complete', 'wcgm_extend_order');
+add_action('woocommerce_order_status_completed', 'wcgm_extend_order');
 
 /** Attaching predefined presents for the order.
  * @param $order_id The presents should be attached to this order.
@@ -65,14 +66,20 @@ function wcgm_get_presents_for_items($items)
     return array_merge($presents_all, $presents_everyone);
 }
 
+function contains($order, $product_id) { // TODO: refactor me
+    $items = $order->get_items();
+    $items_product_id = array_map('wcgm_map_element_to_product_id', $items);
+    return in_array($product_id, $items_product_id);
+}
+
 /**
  * @param $products The presents to be attached to a certain order.
  * @param WC_Order $order
  */
 function wcgm_add_presents($products, WC_Order $order) {
-    $product_ids = array_map('wcgm_map_gift_to_id', $products);
+    $product_ids = array_map('wcgm_map_element_to_product_id', $products);
     foreach ($product_ids as $product_id) {
-        if( $product_id != '' ) {
+        if( $product_id != '' && !contains($order, $product_id)) {
             $gift = new WC_Product($product_id);
             Woocommerce_Gift_Manager_Logger::log('Adding product: ' . $gift->get_name());
             $order->add_product($gift, 1, array('subtotal' => 0, 'total' => 0));
@@ -80,7 +87,7 @@ function wcgm_add_presents($products, WC_Order $order) {
     }
 }
 
-function wcgm_map_gift_to_id($gift) {
+function wcgm_map_element_to_product_id($gift) {
     return $gift->get_product_id();
 }
 
