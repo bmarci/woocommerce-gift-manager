@@ -1,28 +1,30 @@
 <?php
 
+define('WCGM_DEFAULT_OPTIONS_DELIMITER', ';');
 define('WCGM_PREFIX', 'wcgm');
 define('WCGM_ALL', constant('WCGM_PREFIX').'_all');
 define('WCGM_CATEGORY', constant('WCGM_PREFIX').'_category');
 define('WCGM_PRODUCT', constant('WCGM_PREFIX').'_product');
 
-
+require_once ('woocommerce-gift-manager-gift.php');
 require_once ('woocommerce-gift-manager-logger.php');
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
 }
 
-add_action('woocommerce_pre_payment_complete', 'wcgm_add_presents');
+add_action('woocommerce_pre_payment_complete', 'wcgm_extend_order');
 
 /** Attaching predefined presents for the order.
  * @param $order_id The presents should be attached to this order.
  */
-function wcgm_add_presents( $order_id ) {
+function wcgm_extend_order( $order_id ) {
     Woocommerce_Gift_Manager_Logger::log('Payment completed, it\'s time to add some extras..');
 
     $order = new WC_Order($order_id);
-    $presents_all = fetch_presents_for_order($order);
+    $presents_all = wcgm_fetch_presents_for_order($order);
 
-    add_presents($presents_all, $order);
+    wcgm_add_presents($presents_all, $order);
 
 }
 
@@ -30,13 +32,10 @@ function wcgm_add_presents( $order_id ) {
  * @param $order_id
  * @return array
  */
-function fetch_presents_for_order($order) {
+function wcgm_fetch_presents_for_order($order) {
     Woocommerce_Gift_Manager_Logger::log('fetch_presents_for_order: '.$order->get_id);
-
     $items = $order->get_items();
-
-    return get_presents_for_items($items);
-
+    return wcgm_get_presents_for_items($items);
 }
 
 /**
@@ -44,7 +43,7 @@ function fetch_presents_for_order($order) {
  * @param array $presents_all
  * @return array
  */
-function get_presents_for_items($items)
+function wcgm_get_presents_for_items($items)
 {
     $presents_all = array();
     foreach ($items as $item) {
@@ -52,7 +51,7 @@ function get_presents_for_items($items)
         Woocommerce_Gift_Manager_Logger::log('get_presents_for_items - Finding presents product id: ' . $product_id);
         $presents_for_product = wcgm_get_presents_for_product($product_id);
         $presents_all = array_merge($presents_all, $presents_for_product); // Attach present for product
-        $product_categories = get_categories_for_product($product_id);
+        $product_categories = wcgm_get_categories_for_product($product_id);
         foreach ($product_categories as $product_category_id) { // Attach present for product category
             Woocommerce_Gift_Manager_Logger::log('get_presents_for_items - Finding presents category id: ' . $product_category_id);
             $presents_for_category = wcgm_get_presents_for_category($product_category_id);
@@ -70,8 +69,9 @@ function get_presents_for_items($items)
  * @param $products The presents to be attached to a certain order.
  * @param WC_Order $order
  */
-function add_presents($products, WC_Order $order) {
-    foreach ($products as $product_id) {
+function wcgm_add_presents($products, WC_Order $order) {
+    $product_ids = array_map('wcgm_map_gift_to_id', $products);
+    foreach ($product_ids as $product_id) {
         if( $product_id != '' ) {
             $gift = new WC_Product($product_id);
             Woocommerce_Gift_Manager_Logger::log('Adding product: ' . $gift->get_name());
@@ -80,11 +80,24 @@ function add_presents($products, WC_Order $order) {
     }
 }
 
+function wcgm_map_gift_to_id($gift) {
+    return $gift->get_product_id();
+}
+
+function wcgm_filter_valid_gift($gift) {
+    return $gift->is_valid();
+}
+
+function wcgm_filter_visible_gift($gift) {
+    return $gift->is_visible();
+}
+
 /** This will return the product ids of the products that should be attached to all orders.
  * @return mixed The product ids of the products that should be attached to all orders.
  */
 function wcgm_get_presents_for_all() {
-    return explode(";", get_option(constant('WCGM_ALL'),''));
+    Woocommerce_Gift_Manager_Logger::log('wcgm_get_presents_for_all');
+    return wcgm_get_valid_gifts_from_option(WCGM_ALL);
 }
 
 /** This will return the product ids of the products that should be attached to orders which has at least one product
@@ -93,8 +106,8 @@ function wcgm_get_presents_for_all() {
  * @return mixed The product ids to be attached.
  */
 function wcgm_get_presents_for_category($category_id) {
-    $category = sanitize_key($category_id);
-    return explode(";",get_option(constant('WCGM_CATEGORY').'_'.$category,''));
+    Woocommerce_Gift_Manager_Logger::log('wcgm_get_presents_for_category');
+    return wcgm_get_valid_gifts_from_option(WCGM_CATEGORY.'_'.$category_id);
 }
 
 /** This will return the product ids to be attached to the orders containing the param product.
@@ -102,15 +115,46 @@ function wcgm_get_presents_for_category($category_id) {
  * @return mixed The product ids to be attached.
  */
 function wcgm_get_presents_for_product($product_id) {
-    $product = sanitize_key($product_id);
-    return explode(";",get_option(constant('WCGM_PRODUCT').'_'.$product,''));
+    Woocommerce_Gift_Manager_Logger::log('wcgm_get_presents_for_product');
+    return wcgm_get_valid_gifts_from_option(WCGM_PRODUCT.'_'.$product_id);
 }
 
-function map_terms_to_category($term_item) { // TODO: refactor me
+function wcgm_get_valid_gifts_from_option($option_key) {
+    Woocommerce_Gift_Manager_Logger::log('wcgm_get_valid_gifts_from_option');
+    $gifts = wcgm_get_gifts_from_option($option_key);
+    return array_filter($gifts, 'wcgm_filter_valid_gift');
+}
+
+function wcgm_get_gifts_from_option($option_key) {
+    Woocommerce_Gift_Manager_Logger::log('wcgm_get_gifts_from_option');
+    $option_key = sanitize_key($option_key);
+    $options_string = get_option($option_key, array());
+    return wcgm_parse_to_gifts($options_string);
+}
+
+function wcgm_map_terms_to_category($term_item) { // TODO: refactor me
     return $term_item->term_id;
 }
 
-function get_categories_for_product($product_id) { // TODO: refactor me
+function wcgm_get_categories_for_product($product_id) { // TODO: refactor me
     $product_terms = get_the_terms($product_id, 'product_cat');
-    return array_map("map_terms_to_category", $product_terms);
+    return array_map("wcgm_map_terms_to_category", $product_terms);
+}
+
+function wcgm_parse_to_gifts($gift) {
+    Woocommerce_Gift_Manager_Logger::log('wcgm_parse_to_gifts');
+    $gifts = array();
+    $gift_strings = explode(WCGM_DEFAULT_OPTIONS_DELIMITER, $gift);
+    foreach ($gift_strings as $gift_string) {
+        $gift = wcgm_parse_to_gift($gift_string);
+        array_push($gifts, $gift);
+    }
+    return $gifts;
+}
+
+function wcgm_parse_to_gift($gift_string){
+    Woocommerce_Gift_Manager_Logger::log('wcgm_parse_to_gift <= '.$gift_string);
+    $gift = new Woocommerce_Gift_Manager_Gift();
+    $gift->parse($gift_string);
+    return $gift;
 }
