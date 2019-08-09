@@ -17,7 +17,7 @@ define('WCGM_ALL_PRODUCTS', constant('WCGM_PREFIX').'_all');
 define('WCGM_CATEGORY', constant('WCGM_PREFIX').'_category');
 define('WCGM_PRODUCT', constant('WCGM_PREFIX').'_product');
 
-require_once ('woocommerce-gift-manager-admin.php');
+//require_once ('woocommerce-gift-manager-admin.php');
 require_once ('woocommerce-gift-manager-handler.php');
 require_once ('woocommerce-gift-manager-logger.php');
 require_once ('woocommerce-gift-manager-renderer.php');
@@ -30,7 +30,7 @@ add_action('plugins_loaded', 'wcgm_init', 0);
 
 function wcgm_init() {
     if ( wcgm_is_active() ) {
-        Woocommerce_Gift_Manager_Logger::log('Works as charm!');
+        Woocommerce_Gift_Manager_Logger::log('WCGM is ready!');
     }
 }
 
