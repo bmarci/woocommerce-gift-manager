@@ -33,19 +33,28 @@ function wcgm_add_presents( $order_id ) {
 function fetch_presents_for_order($order) {
     Woocommerce_Gift_Manager_Logger::log('fetch_presents_for_order: '.$order->get_id);
 
-    $presents_all = array();
-
     $items = $order->get_items();
 
+    return get_presents_for_items($items);
+
+}
+
+/**
+ * @param $items
+ * @param array $presents_all
+ * @return array
+ */
+function get_presents_for_items($items)
+{
+    $presents_all = array();
     foreach ($items as $item) {
         $product_id = $item->get_product_id();
-        Woocommerce_Gift_Manager_Logger::log('fetch_presents_for_order - Finding presents product id: ' . $product_id);
+        Woocommerce_Gift_Manager_Logger::log('get_presents_for_items - Finding presents product id: ' . $product_id);
         $presents_for_product = wcgm_get_presents_for_product($product_id);
         $presents_all = array_merge($presents_all, $presents_for_product); // Attach present for product
-        $product_categories = get_the_terms($product_id, 'product_cat');
-        foreach ($product_categories as $product_category) { // Attach present for product category
-            $product_category_id = $product_category->term_id;
-            Woocommerce_Gift_Manager_Logger::log('fetch_presents_for_order - Finding presents category id: ' . $product_category_id);
+        $product_categories = get_categories_for_product($product_id);
+        foreach ($product_categories as $product_category_id) { // Attach present for product category
+            Woocommerce_Gift_Manager_Logger::log('get_presents_for_items - Finding presents category id: ' . $product_category_id);
             $presents_for_category = wcgm_get_presents_for_category($product_category_id);
             $presents_all = array_merge($presents_all, $presents_for_category);
         }
@@ -55,7 +64,6 @@ function fetch_presents_for_order($order) {
     $presents_everyone = wcgm_get_presents_for_all();
 
     return array_merge($presents_all, $presents_everyone);
-
 }
 
 /**
@@ -96,4 +104,13 @@ function wcgm_get_presents_for_category($category_id) {
 function wcgm_get_presents_for_product($product_id) {
     $product = sanitize_key($product_id);
     return explode(";",get_option(constant('WCGM_PRODUCT').'_'.$product,''));
+}
+
+function map_terms_to_category($term_item) { // TODO: refactor me
+    return $term_item->term_id;
+}
+
+function get_categories_for_product($product_id) { // TODO: refactor me
+    $product_terms = get_the_terms($product_id, 'product_cat');
+    return array_map("map_terms_to_category", $product_terms);
 }
