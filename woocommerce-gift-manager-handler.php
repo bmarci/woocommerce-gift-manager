@@ -1,17 +1,18 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly
+}
+
+require_once ('woocommerce-gift-manager-arrays.php');
+require_once ('woocommerce-gift-manager-gift.php');
+require_once ('woocommerce-gift-manager-logger.php');
+
 define('WCGM_DEFAULT_OPTIONS_DELIMITER', ';');
 define('WCGM_PREFIX', 'wcgm');
 define('WCGM_ALL', constant('WCGM_PREFIX').'_all');
 define('WCGM_CATEGORY', constant('WCGM_PREFIX').'_category');
 define('WCGM_PRODUCT', constant('WCGM_PREFIX').'_product');
-
-require_once ('woocommerce-gift-manager-gift.php');
-require_once ('woocommerce-gift-manager-logger.php');
-
-if ( ! defined( 'ABSPATH' ) ) {
-    exit; // Exit if accessed directly
-}
 
 add_action('woocommerce_pre_payment_complete', 'wcgm_extend_order');
 add_action('woocommerce_order_status_completed', 'wcgm_extend_order');
@@ -66,12 +67,6 @@ function wcgm_get_presents_for_items($items)
     return array_merge($presents_all, $presents_everyone);
 }
 
-function contains($order, $product_id) { // TODO: refactor me
-    $items = $order->get_items();
-    $items_product_id = array_map('wcgm_map_element_to_product_id', $items);
-    return in_array($product_id, $items_product_id);
-}
-
 /**
  * @param $products The presents to be attached to a certain order.
  * @param WC_Order $order
@@ -85,18 +80,6 @@ function wcgm_add_presents($products, WC_Order $order) {
             $order->add_product($gift, 1, array('subtotal' => 0, 'total' => 0));
         }
     }
-}
-
-function wcgm_map_element_to_product_id($gift) {
-    return $gift->get_product_id();
-}
-
-function wcgm_filter_valid_gift($gift) {
-    return $gift->is_valid();
-}
-
-function wcgm_filter_visible_gift($gift) {
-    return $gift->is_visible();
 }
 
 /** This will return the product ids of the products that should be attached to all orders.
@@ -137,10 +120,6 @@ function wcgm_get_gifts_from_option($option_key) {
     $option_key = sanitize_key($option_key);
     $options_string = get_option($option_key, array());
     return wcgm_parse_to_gifts($options_string);
-}
-
-function wcgm_map_terms_to_category($term_item) { // TODO: refactor me
-    return $term_item->term_id;
 }
 
 function wcgm_get_categories_for_product($product_id) { // TODO: refactor me

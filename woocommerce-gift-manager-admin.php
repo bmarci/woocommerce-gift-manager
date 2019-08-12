@@ -29,17 +29,27 @@ function wcgm_show_menu() {
 
     submit_button();
     echo '</form></div>';
+    foreach (WC_API_Products::get_products() as $product) {
+        echo '<div>'.$product->get_id().'</div>';
+    }
+
+
+    $args     = array( 'post_type' => 'product', 'category' => 34, 'posts_per_page' => -1 );
+    $products = get_posts( $args );
+
+    //Woocommerce_Gift_Manager_Logger::log('retrieved products: '.print_r($products, true));
 }
 
 
 function wporg_custom_box_html($post)
 {
     ?>
-    <label for="wporg_field">Description for this field</label>
-    <select name="wporg_field" id="wporg_field" class="postbox">
-        <option value="">Select something...</option>
-        <option value="something">Something</option>
-        <option value="else">Else</option>
-    </select>
+    <form role="search" method="get" class="woocommerce-product-search" action="<?php echo esc_url( home_url( '/' ) ); ?>">
+        <label class="screen-reader-text" for="woocommerce-product-search-field-<?php echo isset( $index ) ? absint( $index ) : 0; ?>"><?php esc_html_e( 'Search for:', 'woocommerce' ); ?></label>
+        <input type="search" id="woocommerce-product-search-field-<?php echo isset( $index ) ? absint( $index ) : 0; ?>" class="search-field" placeholder="<?php echo esc_attr__( 'Search products&hellip;', 'woocommerce' ); ?>" value="<?php echo get_search_query(); ?>" name="s" />
+        <button type="submit" value="<?php echo esc_attr_x( 'Search', 'submit button', 'woocommerce' ); ?>"><?php echo esc_html_x( 'Search', 'submit button', 'woocommerce' ); ?></button>
+        <input type="hidden" name="post_type" value="product" />
+    </form>
+
     <?php
 }
