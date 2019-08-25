@@ -1,6 +1,6 @@
 # Woocommerce Gift Manager
 
-### Please note that this project is under construction. It is working, but only the backend part is ready yet so you won't be able to do any changes from UI, only by DB magic. But I will write a UI for you, I promise :)
+### Please note that this project is under construction. Only the backend part is ready yet so you won't be able to do any changes from UI, only by DB magic. But I will write a UI for you, I promise :)
 
 ## Mission statement
 This project has one purpose: helping woocommerce users giving downloadable gifts for downloadable products within a certain period of time. Basically you can configure the system to attach certain products (the gifts you want to give) for an other product, category or to all orders.
@@ -21,7 +21,7 @@ We wanted to send the customer a catalogue with our products attached to his/her
 We measured that it is highly beneficial to display the picture of the product in the checkout page. We wanted to display the image of the gifts as well but we did not want to display the attached catalogue. We had to find a way to say explicitly if we want to display a certain gift or not.
 
 ## The flow
-Long story shot: You choose some products (the gifts) uploaded to your woocommerce store and you attach it to a single product, to a product category or to all orders with a given start and end date. Your customer's order will be extended by these gifts if one order your target between the start and the end date.
+Long story short: You choose some products (the gifts) uploaded to your woocommerce store and you attach it to a single product, to a product category or to all orders with a given start and end date. Your customer's order will be extended by these gifts if one order your target between the start and the end date.
 
 ### The flow - attaching gift(s) for a single product:
 We identify products by post id. 
