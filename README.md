@@ -1,6 +1,6 @@
-# woocommerce-gift-manager
+# Woocommerce Gift Manager
 
-## Please note that this project is under construction. It is working, but only the backend part is ready yet so you won't be able to do any changes from UI, only by DB magic. But I will write a UI for you, I promise :)
+### Please note that this project is under construction. It is working, but only the backend part is ready yet so you won't be able to do any changes from UI, only by DB magic. But I will write a UI for you, I promise :)
 
 ## Mission statement
 This project has one purpose: helping woocommerce users giving downloadable gifts for downloadable products within a certain period of time. Basically you can configure the system to attach certain products (the gifts you want to give) for an other product, category or to all orders.
